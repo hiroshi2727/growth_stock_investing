@@ -1,0 +1,55 @@
+name: Daily Stock Screening
+
+on:
+  schedule:
+    # 東京証券取引所 終値確定後 (16:00 JST = 07:00 UTC) に実行
+    # 月〜金のみ
+    - cron: '0 7 * * 1-5'
+  workflow_dispatch:
+    # GitHub上から手動実行も可能
+
+jobs:
+  screening:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run screening (JST timezone)
+        env:
+          TZ: Asia/Tokyo
+        run: python screening.py
+
+      - name: Commit and push report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add screening_report_*.md
+          if git diff --staged --quiet; then
+            echo "No new report to commit (market holiday or already up-to-date)"
+          else
+            REPORT_DATE=$(date +%Y-%m-%d)
+            git commit -m "screening report ${REPORT_DATE}"
+            git push origin main
+          fi
