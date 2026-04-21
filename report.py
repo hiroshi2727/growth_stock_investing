@@ -8,7 +8,7 @@ def generate_markdown_report(market, new_highs, qualified, all_scored, nh_trend,
 
     L(f"# 新高値ブレイク投資法 スクリーニングレポート v2")
     L(f"**実行日: {today}**")
-    L(f"**優先度体系: MUST（DUKE。メソッド）+ NICE（ミネルヴィニ/オニール）**")
+    L(f"**優先度体系: MUST（DUKE。メソッド）**")
     L("")
     L("---")
     L("")
@@ -74,13 +74,10 @@ def generate_markdown_report(market, new_highs, qualified, all_scored, nh_trend,
             tt = s.get('tt', {})
             bp = s.get('box_breakout', {})
             fund = s.get('fund', {})
-            rs = s.get('rs')
-            vcp = s.get('vcp')
-            vol = s.get('vol', {})
 
             L(f"#### 【{code}】{s['name']}")
             L("")
-            L(f"**総合スコア: {sc['total_score']}pt（MUST: {sc['must_score']}pt + NICE: {sc['nice_score']}pt）**")
+            L(f"**MUSTスコア: {sc['must_score']}pt**")
             L(f"**判定: {sc['recommendation']}** | MUST達成率: {sc['must_rate']:.0f}%（{sc['must_pass']}/{sc['must_pass']+sc['must_fail']}）")
             L("")
 
@@ -131,63 +128,7 @@ def generate_markdown_report(market, new_highs, qualified, all_scored, nh_trend,
             mc = fund.get('market_cap')
             mc_str = f"{mc/1e8:,.0f}億円 ({fund.get('f04_label', 'N/A')})" if mc else "N/A"
             L(f"| F-04（時価総額） | {fund.get('f04_label', 'N/A')} | {mc_str} |")
-            bigchange = fund.get('bigchange', {})
-            bc_hits = bigchange.get('categories_hit', [])
-            if bigchange.get('has_candidate'):
-                bc_count = len(bigchange.get('matches', []))
-                L(f"| F-05（ビッグチェンジ） | 候補あり | {bc_count}件検出（{', '.join(bc_hits)}）→ 下記報告参照 |")
-            else:
-                L(f"| F-05（ビッグチェンジ） | 要確認 | ニュースからの自動検出なし → 下記報告参照 |")
             L("")
-
-            L("**NICE条件（ミネルヴィニ/オニール）:**")
-            L("")
-            L("| 条件 | 結果 | 詳細 |")
-            L("|------|------|------|")
-
-            if rs:
-                rs_raw = rs.get('rs_raw', 0)
-                L(f"| RS（レラティブストレングス） | RS={rs_raw:+.1f} | 12M={rs['stock_ret_12m']:+.1f}%, 6M={rs['stock_ret_6m']:+.1f}%, 3M={rs['stock_ret_3m']:+.1f}% |")
-                rs_trend = "改善中" if rs.get('rs_improving') else ("悪化" if rs.get('rs_improving') is False else "N/A")
-                L(f"| RS推移 | {rs_trend} | - |")
-            else:
-                L(f"| RS | N/A | データ不足 |")
-
-            if vcp and vcp.get('detected'):
-                contractions_str = " → ".join([f"{c['drawdown_pct']:.1f}%" for c in vcp['contractions']])
-                L(f"| VCP | 検出 (+{vcp['score']}pt) | 収縮{vcp['contraction_count']}回: {contractions_str} |")
-            else:
-                L(f"| VCP | 未検出 | - |")
-
-            canslim = s.get('canslim_nice', {})
-            for key, val in canslim.get('details', {}).items():
-                L(f"| {key} | - | {val} |")
-
-            roe = fund.get('roe')
-            pe = fund.get('pe_trailing')
-            if roe is not None:
-                L(f"| ROE | {roe*100:.1f}% | {'17%以上' if roe >= 0.17 else '17%未満'} |")
-            if pe is not None:
-                L(f"| PER | {pe:.1f}x | - |")
-
-            L("")
-
-            bigchange = fund.get('bigchange', {})
-            llm_summary = bigchange.get('llm_summary', '')
-            bc_summary = bigchange.get('summary', '')
-            if llm_summary:
-                tdnet_n = bigchange.get('tdnet_count', 0)
-                L(f"**F-05 ビッグチェンジ調査報告（TDnet {tdnet_n}件 + Web検索 / claude -p 生成）:**")
-                L("")
-                for line in llm_summary.strip().split('\n'):
-                    L(line)
-                L("")
-            elif bc_summary:
-                L("**F-05 ビッグチェンジ調査報告:**")
-                L("")
-                for line in bc_summary.strip().split('\n'):
-                    L(line)
-                L("")
 
             L("---")
             L("")
@@ -210,9 +151,7 @@ def generate_markdown_report(market, new_highs, qualified, all_scored, nh_trend,
     L("- データソース: yfinance（Yahoo Finance）。株価は取得時点の最新値。")
     L("- 売上・利益成長率はyfinanceのデータ。直近四半期の数値とは異なる場合あり。")
     L("- F-01/F-02はyfinance info値→四半期損益計算書→年次損益計算書の優先順でフォールバック取得。括弧内にデータソースを表示。")
-    L("- F-05（ビッグチェンジ）はyfinanceニュースからBC-01~07キーワードで自動検出。最終判断は人間が行う。")
     L("- ボックスブレイク(BP)の検出は自動アルゴリズムによる近似。目視確認を推奨。")
-    L("- VCPパターンの検出も自動アルゴリズムによる近似。")
     L("- 本レポートは投資助言ではありません。投資判断は自己責任で行ってください。")
     if market and market.get('m05_warning'):
         L(f"- **ディストリビューションデー{market['distribution_days']}日: ポジション縮小・慎重姿勢を推奨。**")

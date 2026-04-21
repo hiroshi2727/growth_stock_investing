@@ -31,14 +31,11 @@ warnings.filterwarnings('ignore')
 from market import NIKKEI_TICKER, check_market
 from scanner import scan_new_highs
 from trend import (
-    calculate_relative_strength,
     check_trend_template,
     check_volume,
     detect_box_breakout,
-    detect_vcp,
 )
-from bigchange import enrich_with_llm_bigchange
-from fundamentals import evaluate_canslim_nice, get_fundamentals
+from fundamentals import get_fundamentals
 from scoring import calculate_total_score
 from report import generate_markdown_report
 
@@ -58,18 +55,6 @@ def main():
     if not new_highs:
         print("\n  52週新高値更新銘柄なし。スクリーニング終了。")
         return
-
-    nikkei_closes = None
-    try:
-        if isinstance(data.columns, pd.MultiIndex):
-            nk = yf.Ticker(NIKKEI_TICKER)
-            nk_df = nk.history(period="2y", auto_adjust=True)
-            if not nk_df.empty:
-                nikkei_closes = nk_df['Close'].dropna()
-        else:
-            nikkei_closes = data['Close'].dropna()
-    except Exception:
-        pass
 
     print(f"\n{'=' * 70}")
     print(f"STEP 3-6: 個別銘柄評価（新高値{len(new_highs)}銘柄）")
@@ -126,18 +111,7 @@ def main():
         rg_val = fund.get('revenue_growth')
         eg_detail = f"{eg_val*100:+.0f}%[{eg_src}]" if eg_val is not None else "N/A"
         rg_detail = f"{rg_val*100:+.0f}%[{rg_src}]" if rg_val is not None else "N/A"
-        bc = fund.get('bigchange', {})
-        bc_str = f"BC:{len(bc.get('matches', []))}件" if bc.get('has_candidate') else "BC:未検出"
-        print(f" | F-01:{f01}({eg_detail}) F-02:{f02}({rg_detail}) {bc_str}", end="")
-
-        rs = calculate_relative_strength(closes, nikkei_closes)
-        stock['rs'] = rs
-
-        vcp = detect_vcp(closes, volumes)
-        stock['vcp'] = vcp
-
-        canslim = evaluate_canslim_nice(fund)
-        stock['canslim_nice'] = canslim
+        print(f" | F-01:{f01}({eg_detail}) F-02:{f02}({rg_detail})", end="")
 
         scoring = calculate_total_score(stock)
         stock['scoring'] = scoring
@@ -168,8 +142,6 @@ def main():
 
     print_group("推奨（MUST全クリア）", recommended)
     print_group("条件付き監視（MUST 80%以上）", watchlist)
-
-    enrich_with_llm_bigchange(recommended + watchlist)
 
     tt_near = [s for s in new_highs if s.get('tt') and not s['tt']['all_pass'] and s['tt']['pass_count'] >= 6]
     if tt_near:

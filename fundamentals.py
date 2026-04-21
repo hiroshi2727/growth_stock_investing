@@ -1,8 +1,7 @@
-"""STEP 5b: ファンダメンタルズ [MUST: F-01~F-05] + CAN-SLIM NICE条件"""
+"""STEP 5b: ファンダメンタルズ [MUST: F-01~F-04]"""
 import numpy as np
 import yfinance as yf
 
-from bigchange import analyze_bigchange_news
 from scanner import UNIVERSE
 
 
@@ -171,7 +170,6 @@ def get_fundamentals(ticker):
         pe = info.get("trailingPE")
         forward_pe = info.get("forwardPE")
         profit_margins = info.get("profitMargins")
-        shares = info.get("sharesOutstanding")
 
         f01_pass = earnings_growth is not None and earnings_growth >= 0.20
         f01_score = 0
@@ -213,9 +211,6 @@ def get_fundamentals(ticker):
                 f04_score = 1
                 f04_label = "大型"
 
-        name = UNIVERSE.get(ticker, "")
-        bigchange = analyze_bigchange_news(ticker, name)
-
         profitable = pe is not None and pe > 0
 
         must_score = f01_score + f02_score + f03_score + f04_score
@@ -229,7 +224,6 @@ def get_fundamentals(ticker):
             "revenue_growth": revenue_growth,
             "earnings_growth": earnings_growth,
             "profit_margins": profit_margins,
-            "shares_outstanding": shares,
             "profitable": profitable,
             "earnings_acceleration": earnings_acceleration,
             "revenue_acceleration": revenue_acceleration,
@@ -241,7 +235,6 @@ def get_fundamentals(ticker):
             "f04_score": f04_score, "f04_label": f04_label,
             "sector": info.get("sector"),
             "industry": info.get("industry"),
-            "bigchange": bigchange,
             "must_fund_score": must_score,
             "must_fund_pass": f01_pass and f02_pass,
         }
