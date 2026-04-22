@@ -133,12 +133,12 @@ def main():
             print(f"\n  {label}: なし")
             return
         print(f"\n  {label}:")
-        print(f"  {'コード':<8} {'銘柄名':<18} {'総合':>5} {'MUST':>5} {'NICE':>5} {'達成率':>6} {'判定':<8}")
-        print(f"  {'─'*60}")
+        print(f"  {'コード':<8} {'銘柄名':<18} {'スコア':>6} {'達成率':>6} {'判定':<8}")
+        print(f"  {'─'*55}")
         for s in stocks:
             code = s['ticker'].replace('.T', '')
             sc = s['scoring']
-            print(f"  {code:<8} {s['name']:<18} {sc['total_score']:>5} {sc['must_score']:>5} {sc['nice_score']:>5} {sc['must_rate']:>5.0f}% {sc['recommendation']:<8}")
+            print(f"  {code:<8} {s['name']:<18} {sc['must_score']:>6} {sc['must_rate']:>5.0f}% {sc['recommendation']:<8}")
 
     print_group("推奨（MUST全クリア）", recommended)
     print_group("条件付き監視（MUST 80%以上）", watchlist)
